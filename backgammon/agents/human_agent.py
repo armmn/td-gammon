@@ -7,6 +7,10 @@ class HumanAgent(object):
 
     def get_action(self, moves, game=None):
         print moves
+        maxmoves = 0
+        for mv in moves:
+            maxmoves = max(maxmoves, len(mv))
+
         if not moves:
             raw_input("No moves for you...(hit enter)")
             return None
@@ -31,10 +35,39 @@ class HumanAgent(object):
                 else:
                     break
 
-            if mv2:
-                move = (mv1, mv2)
+            if maxmoves > 2:
+                while True:
+                    mv3 = raw_input('Please enter a third move (enter to skip): ')
+                    if mv3 == '':
+                        mv3 = None
+                        break
+                    mv3 = self.get_formatted_move(mv3)
+                    if not mv3:
+                        print 'Bad format enter e.g. "3,4"'
+                    else:
+                        break
+
+                while True:
+                    mv4 = raw_input('Please enter a fourth move (enter to skip): ')
+                    if mv4 == '':
+                        mv4 = None
+                        break
+                    mv4 = self.get_formatted_move(mv4)
+                    if not mv4:
+                        print 'Bad format enter e.g. "3,4"'
+                    else:
+                        break
+
+                if mv4:
+                    move = (mv1, mv2, mv3, mv4)
+                else:
+                    move = (mv1, mv2, mv3)
+
             else:
-                move = (mv1,)
+                if mv2:
+                    move = (mv1, mv2)
+                else:
+                    move = (mv1,)
 
             if move in moves:
                 return move
