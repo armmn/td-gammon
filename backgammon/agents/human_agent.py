@@ -6,6 +6,7 @@ class HumanAgent(object):
         self.name = 'Human'
 
     def get_action(self, moves, game=None):
+        print moves
         if not moves:
             raw_input("No moves for you...(hit enter)")
             return None
