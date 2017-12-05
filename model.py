@@ -219,7 +219,7 @@ class Model(object):
 
                     x_next = game.extract_features(players[player_num].player)
                     V_next = self.get_output(x_next)
-                    self.sess.run(self.train_op, feed_dict={ self.x: x, self.V_next: V_next }, config=tf.ConfigProto(log_device_placement=True))
+                    self.sess.run(self.train_op, feed_dict={ self.x: x, self.V_next: V_next })
 
                     x = x_next
                     game_step += 1
