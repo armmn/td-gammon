@@ -27,7 +27,8 @@ if __name__ == '__main__':
     graph = tf.Graph()
     sess = tf.Session(graph=graph, config=tf.ConfigProto(log_device_placement=True))
     with sess.as_default(), graph.as_default():
-        model = Model(sess, model_path, summary_path, checkpoint_path, restore=FLAGS.restore)
+        with tf.device('/gpu:0'):
+            model = Model(sess, model_path, summary_path, checkpoint_path, restore=FLAGS.restore)
         if FLAGS.test:
             model.test(episodes=1000)
         elif FLAGS.play:
