@@ -193,49 +193,50 @@ class Model(object):
                 (winners[0] / winners_total) * 100.0))
 
     def train(self):
-        tf.train.write_graph(self.sess.graph_def, self.model_path, 'td_gammon.pb', as_text=False)
-        summary_writer = tf.train.SummaryWriter('{0}{1}'.format(self.summary_path, int(time.time()), self.sess.graph_def))
+        with tf.device('/gpu:0'):
+            tf.train.write_graph(self.sess.graph_def, self.model_path, 'td_gammon.pb', as_text=False)
+            summary_writer = tf.train.SummaryWriter('{0}{1}'.format(self.summary_path, int(time.time()), self.sess.graph_def))
 
-        # the agent plays against itself, making the best move for each player
-        players = [TDAgent(Game.TOKENS[0], self), TDAgent(Game.TOKENS[1], self)]
+            # the agent plays against itself, making the best move for each player
+            players = [TDAgent(Game.TOKENS[0], self), TDAgent(Game.TOKENS[1], self)]
 
-        validation_interval = 1000
-        episodes = 5000
+            validation_interval = 1000
+            episodes = 5000
 
-        for episode in range(episodes):
-            if episode != 0 and episode % validation_interval == 0:
-                self.test(episodes=100)
+            for episode in range(episodes):
+                if episode != 0 and episode % validation_interval == 0:
+                    self.test(episodes=100)
 
-            game = Game.new()
-            player_num = random.randint(0, 1)
+                game = Game.new()
+                player_num = random.randint(0, 1)
 
-            x = game.extract_features(players[player_num].player)
+                x = game.extract_features(players[player_num].player)
 
-            game_step = 0
-            while not game.is_over():
-                game.next_step(players[player_num], player_num)
-                player_num = (player_num + 1) % 2
+                game_step = 0
+                while not game.is_over():
+                    game.next_step(players[player_num], player_num)
+                    player_num = (player_num + 1) % 2
 
-                x_next = game.extract_features(players[player_num].player)
-                V_next = self.get_output(x_next)
-                self.sess.run(self.train_op, feed_dict={ self.x: x, self.V_next: V_next })
+                    x_next = game.extract_features(players[player_num].player)
+                    V_next = self.get_output(x_next)
+                    self.sess.run(self.train_op, feed_dict={ self.x: x, self.V_next: V_next }, config=tf.ConfigProto(log_device_placement=True))
 
-                x = x_next
-                game_step += 1
+                    x = x_next
+                    game_step += 1
 
-            winner = game.winner()
+                winner = game.winner()
 
-            _, global_step, summaries, _ = self.sess.run([
-                self.train_op,
-                self.global_step,
-                self.summaries_op,
-                self.reset_op
-            ], feed_dict={ self.x: x, self.V_next: np.array([[winner]], dtype='float') })
-            summary_writer.add_summary(summaries, global_step=global_step)
+                _, global_step, summaries, _ = self.sess.run([
+                    self.train_op,
+                    self.global_step,
+                    self.summaries_op,
+                    self.reset_op
+                ], feed_dict={ self.x: x, self.V_next: np.array([[winner]], dtype='float') })
+                summary_writer.add_summary(summaries, global_step=global_step)
 
-            print("Game %d/%d (Winner: %s) in %d turns" % (episode, episodes, players[winner].player, game_step))
-            self.saver.save(self.sess, self.checkpoint_path + 'checkpoint', global_step=global_step)
+                print("Game %d/%d (Winner: %s) in %d turns" % (episode, episodes, players[winner].player, game_step))
+                self.saver.save(self.sess, self.checkpoint_path + 'checkpoint', global_step=global_step)
 
-        summary_writer.close()
+            summary_writer.close()
 
-        self.test(episodes=1000)
+            self.test(episodes=1000)
